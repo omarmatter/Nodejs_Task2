@@ -1,6 +1,10 @@
 const express = require('express')
+const Validator = require('validatorjs');
+
 const app = express()
-const port=3000
+app.use(express.json());
+
+const port = 3000
 const users = [
     {
         id: 1,
@@ -118,42 +122,90 @@ app.get("/users/:userId/children/:childId", (req, res) => {
 
 app.post("/users", (req, res) => {
     const body = req.body;
+    const validationRule = {
+        "id": "required|min:1",
+        "isActive": "required",
+        "balance": "required",
+        "picture": "required",
+        "age": "required|min:1",
+        "name": "required|string",
+        "gender": "required|string",
+        "company": "required|string",
+        "email": "required|string",
+        "phone": "required|string",
+
+    }
+    console.log(body)
+    let valid = new Validator(body, validationRule)
+    if (valid.fails()) {
+        res.status(412)
+            .send({
+                success: false,
+                message: 'Validation failed',
+                data: valid.errors
+            });
+    } else {
 
 
-    if (users.find((user) => user.id == body.id)) {
-        res.status(409).json({
-            msg: " Already exists!",
-        });
+        if (users.find((user) => user.id == body.id)) {
+            res.status(409).json({
+                msg: " Already exists!",
+            });
+        }
+
+
+        users.push(body);
+        res.status(200).json(body);
     }
 
-    users.push(body);
-    res.status(200).json(body);
 });
 
+
+
 app.post("/users/:userId/children", (req, res) => {
-    const parentId = req.params.userId;
     const body = req.body;
+    const validationRule = {
+        "id": "required|min:1",
+        "name": "required|string",
+        "parent_id ": "required|min:1",
+        "age": "required|min:1",
 
-    if (parentId != body.parent_id) {
-        res.status(400).json({ msg: " Error!" });
     }
+    console.log(body)
+    let valid = new Validator(body, validationRule)
+    if (valid.fails()) {
+        res.status(412)
+            .send({
+                success: false,
+                message: 'Validation failed',
+                data: valid.errors
+            });
+    } else {
 
-   
+        const parentId = req.params.userId;
+        const body = req.body;
 
-    if (children.find((child) => child.id == body.id)) {
-        res.status(409).json({
-            msg: " Already exists!",
-        });
+        if (parentId != body.parent_id) {
+            res.status(400).json({ msg: " Error!" });
+        }
+
+
+
+        if (children.find((child) => child.id == body.id)) {
+            res.status(409).json({
+                msg: " Already exists!",
+            });
+        }
+
+        if (!users.find((user) => user.id == body.parent_id)) {
+            res.status(404).json({
+                msg: "User is not found!",
+            });
+        }
+
+        children.push(body);
+        res.status(201).json(body);
     }
-
-    if (!users.find((user) => user.id == body.parent_id)) {
-        res.status(404).json({
-            msg: "User is not found!",
-        });
-    }
-
-    children.push(body);
-    res.status(201).json(body);
 });
 
 app.delete("/users/:userId", (req, res) => {
